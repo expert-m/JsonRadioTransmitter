@@ -1,15 +1,6 @@
 # Arduino JSON Radio Transmitter
 
-The Arduino JSON Radio Transmitter is a library that provides a simple and efficient way to transmit and receive JSON messages over a wireless connection using the NRF24L01 radio module. It's designed to be easy to use and flexible, allowing you to focus on your application logic.
-
-## Features
-
-- Easy-to-use API for sending and receiving JSON messages.
-- Uses the ArduinoJson library for efficient JSON handling.
-- Supports message fragmentation and reassembly.
-- Configurable message size and transmission delay.
-- Debug mode for easier troubleshooting.
-- Power management functions (power up/down).
+The Arduino JSON Radio Transmitter is a library that provides a simple way to transmit and receive JSON messages over a wireless connection using the NRF24L01 radio module. It uses the ArduinoJson library for efficient JSON handling and provides message fragmentation and reassembly, power management functions, and a debug mode for easier troubleshooting.
 
 ## Installation
 
@@ -27,17 +18,14 @@ First, include the necessary header files in your Arduino sketch:
 #include "JsonRadioTransmitter.hh"
 ```
 
-Next, create an instance of the `RF24` and `RadioTransmitter` classes, passing the CE and CSN pins of your NRF24L01 module to the `RF24` constructor:
+Next, create an instance of the `RF24` and `RadioTransmitter` classes:
 
 ```cpp
-#define CE_PIN 9
-#define CSN_PIN 10
-
-RF24 radio(CE_PIN, CSN_PIN);
-RadioTransmitter transmitter(radio, "12345", 90); // 12345 is the radio address, 90 is the radio channel
+RF24 radio(9, 10); // CE and CSN pins of your NRF24L01 module
+RadioTransmitter<StaticJsonDocument<200>> transmitter(radio, "RADDR", "WADDR", 90); // Replace "RADDR" and "WADDR" with your own 5-character addresses
 ```
 
-In your `setup()` function, initialize the radio transmitter:
+Initialize the radio transmitter in your `setup()` function:
 
 ```cpp
 void setup() {
@@ -45,44 +33,46 @@ void setup() {
 }
 ```
 
-To send a JSON message, create a `StaticJsonDocument`, populate it with data, and pass it to the `send()` method of the `RadioTransmitter`:
+To send a JSON message, create a `StaticJsonDocument`, fill it with data, and call the `write()` method:
 
 ```cpp
 void loop() {
-  StaticJsonDocument<JSON_RADIO_MSG_SIZE> jsonDoc;
-  jsonDoc["temperature"] = 25.6;
-  jsonDoc["humidity"] = 65.3;
-  
-  if(transmitter.send(jsonDoc)) {
+  StaticJsonDocument<200> doc;
+  doc["temperature"] = 25.6;
+  doc["humidity"] = 65.3;
+
+  if(transmitter.write(doc)) {
     Serial.println("Message sent successfully");
   } else {
     Serial.println("Message sending failed");
   }
-  
+
   delay(1000);
 }
 ```
 
-To receive a JSON message, create a `StaticJsonDocument` and pass it to the `read()` method of the `RadioTransmitter`. If the method returns `true`, the document contains the received JSON data:
+To receive a JSON message, create a `StaticJsonDocument` and call the `read()` method. If the method returns `true`, the document contains the received data:
 
 ```cpp
 void loop() {
-  StaticJsonDocument<JSON_RADIO_MSG_SIZE> jsonDoc;
-  
-  if(transmitter.read(jsonDoc)) {
+  StaticJsonDocument<200> doc;
+
+  if(transmitter.read(doc)) {
     Serial.print("Temperature: ");
-    Serial.println(jsonDoc["temperature"].as<float>());
+    Serial.println(doc["temperature"].as<float>());
     Serial.print("Humidity: ");
-    Serial.println(jsonDoc["humidity"].as<float>());
+    Serial.println(doc["humidity"].as<float>());
   }
-  
+
   delay(1000);
 }
 ```
 
+You can also check if there is incoming data available with the `hasInputData()` method, and control the power state of the radio with the `powerUp()` and `powerDown()` methods.
+
 ## Configuration
 
-You can configure the library by editing the `JsonRadioTransmitter.hh` file. This file allows you to set the radio channel, address, data rate, and other parameters.
+You can configure the library by modifying the public variables in the `RadioTransmitter` class. These variables include `msgSendDelay`, `msgReceiveDelay`, `msgSize`, `readingMaxWaitingTime`, and `debugMode`.
 
 ## License
 
